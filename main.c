@@ -1,8 +1,16 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <ctype.h>
+#include <string.h>
 
 #include "inmanip.h"
+
+struct cmd {
+    char name[50];
+    char arg1[50];
+    char arg2[50];
+};
 
 int
 main(void)
@@ -19,7 +27,15 @@ main(void)
             do {
                 c = getch();
                 if (c == '\n') {
-                    buflen = 0;
+                    struct cmd cmd;
+                    sscanf(buf, "%s %s %s", cmd.name, cmd.arg1, cmd.arg2);
+                    for(int i = 0; cmd.name[i] != '\0'; i += 1) {
+                        cmd.name[i] = toupper(cmd.name[i]);
+                    }
+                    if (strncmp(cmd.name, "EXIT", 4) == 0 ||
+                        strncmp(cmd.name, "SALIR", 5) == 0) {
+                        return 0;
+                    }
                 } 
                 else if (c == 127) {
                     if (buflen > 0) { buflen -= 1; }
