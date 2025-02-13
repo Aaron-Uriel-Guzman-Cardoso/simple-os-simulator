@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "inmanip.h"
 
@@ -11,6 +12,20 @@ struct cmd {
     char arg1[50];
     char arg2[50];
 };
+
+/*
+ * Lee la siguiente línea del archivo y la evalua (imprime)
+ */
+int32_t
+fprintline(FILE *file) {
+    if (!file) { return -1; }
+    char line[256];
+    if (fgets(line, sizeof(line), file)) {
+        printf("%s", line);
+        return 0;
+    }
+    return 1;
+}
 
 /*
  * Imprime un prompt y obtiene un comando ingresado por el usuario.
@@ -56,7 +71,7 @@ eval(struct cmd *cmd) {
     if (!cmd) { return -1; }
     if (strncmp(cmd->name, "EXIT", 4) == 0 ||
         strncmp(cmd->name, "SALIR", 5) == 0) {
-        return 0;
+        exit(0);
     }
     else if (strncmp(cmd->name, "LOAD", 4) == 0) {
         if (cmd->arg1[0] == '\0') {
@@ -68,9 +83,7 @@ eval(struct cmd *cmd) {
             FILE *file = fopen(cmd->arg1, "r");
             if (file) {
                 char line[256];
-                while (fgets(line, sizeof(line), file)) {
-                    printf("%s", line);
-                }
+                while (!fprintline(file));
                 fclose(file);
             }
             else {
@@ -90,7 +103,6 @@ main(void)
     while (true) {
         struct cmd cmd = prompt();
         eval(&cmd);
-        
         getchar();
     }
     return 0;
