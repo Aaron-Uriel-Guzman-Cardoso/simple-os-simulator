@@ -12,54 +12,27 @@ struct cmd {
     char arg2[50];
 };
 
-int
-main(void)
+/*
+ * Imprime un prompt y obtiene un comando ingresado por el usuario.
+ */
+struct cmd
+prompt(void)
 {
+    struct cmd cmd;
     char buf[80] = { 0 };
-    int32_t buflen = 0, count = 0;
+    int32_t buflen = 0;
     char c;
     while (true) {
-        printf("[%d] $ %.*s\n", count, buflen, buf);
-        count += 1;
-        if (count > 10) { count = 0; }
-
+        printf("$ %.*s\n", buflen, buf);
         if (kbhit()) {
             do {
                 c = getch();
                 if (c == '\n') {
-                    struct cmd cmd;
                     sscanf(buf, "%s %s %s", cmd.name, cmd.arg1, cmd.arg2);
                     for(int i = 0; cmd.name[i] != '\0'; i += 1) {
                         cmd.name[i] = toupper(cmd.name[i]);
                     }
-                    if (strncmp(cmd.name, "EXIT", 4) == 0 ||
-                        strncmp(cmd.name, "SALIR", 5) == 0) {
-                        return 0;
-                    }
-                    else if (strncmp(cmd.name, "LOAD", 4) == 0) {
-                        if (cmd.arg1[0] == '\0') {
-                            printf("Error: No se especifico el archivo a "
-                                   "cargar\n");
-                        }
-                        else {
-                            printf("Cargando archivo %s\n", cmd.arg1);
-                            FILE *file = fopen(cmd.arg1, "r");
-                            if (file) {
-                                char line[256];
-                                while (fgets(line, sizeof(line), file)) {
-                                    printf("%s", line);
-                                }
-                                fclose(file);
-                            }
-                            else {
-                                printf("Error: No se pudo abrir el archivo %s\n",
-                                       cmd.arg1);
-                            }
-                        }
-                    }
-                    printf("Comando terminó exitosamente");
-                    getchar();
-                    buflen = 0;
+                    return cmd;
                 } 
                 else if (c == 127) {
                     if (buflen > 0) { buflen -= 1; }
@@ -70,6 +43,55 @@ main(void)
                 }
             } while(kbhit());
         }
+    }
+}
+
+/*
+ * Evalua el comando pasado como argumento.
+ * Todas las acciones que se podrán realizar desde el prompt serán
+ * implementadas en esta función.
+ */
+int32_t
+eval(struct cmd *cmd) {
+    if (!cmd) { return -1; }
+    if (strncmp(cmd->name, "EXIT", 4) == 0 ||
+        strncmp(cmd->name, "SALIR", 5) == 0) {
+        return 0;
+    }
+    else if (strncmp(cmd->name, "LOAD", 4) == 0) {
+        if (cmd->arg1[0] == '\0') {
+            printf("Error: Falta el nombre del archivo\n");
+            return 1;
+        }
+        else {
+            printf("Cargando archivo %s\n", cmd->arg1);
+            FILE *file = fopen(cmd->arg1, "r");
+            if (file) {
+                char line[256];
+                while (fgets(line, sizeof(line), file)) {
+                    printf("%s", line);
+                }
+                fclose(file);
+            }
+            else {
+                printf("Error: No se pudo abrir el archivo %s\n",
+                        cmd->arg1);
+            }
+        }
+    }
+}
+
+int
+main(void)
+{
+    char buf[80] = { 0 };
+    int32_t buflen = 0, count = 0;
+    char c;
+    while (true) {
+        struct cmd cmd = prompt();
+        eval(&cmd);
+        
+        getchar();
     }
     return 0;
 }
