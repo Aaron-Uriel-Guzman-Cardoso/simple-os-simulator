@@ -36,6 +36,30 @@ main(void)
                         strncmp(cmd.name, "SALIR", 5) == 0) {
                         return 0;
                     }
+                    else if (strncmp(cmd.name, "LOAD", 4) == 0) {
+                        if (cmd.arg1[0] == '\0') {
+                            printf("Error: No se especifico el archivo a "
+                                   "cargar\n");
+                        }
+                        else {
+                            printf("Cargando archivo %s\n", cmd.arg1);
+                            FILE *file = fopen(cmd.arg1, "r");
+                            if (file) {
+                                char line[256];
+                                while (fgets(line, sizeof(line), file)) {
+                                    printf("%s", line);
+                                }
+                                fclose(file);
+                            }
+                            else {
+                                printf("Error: No se pudo abrir el archivo %s\n",
+                                       cmd.arg1);
+                            }
+                        }
+                    }
+                    printf("Comando terminó exitosamente");
+                    getchar();
+                    buflen = 0;
                 } 
                 else if (c == 127) {
                     if (buflen > 0) { buflen -= 1; }
