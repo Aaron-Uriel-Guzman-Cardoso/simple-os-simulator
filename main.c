@@ -11,7 +11,7 @@ struct cmd {
     char name[50];
     char arg1[50];
     char arg2[50];
-};
+} typedef CMD;
 
 /*
  * Lee la siguiente línea del archivo y la evalua (imprime)
@@ -30,15 +30,22 @@ fprintline(FILE *file) {
 /*
  * Imprime un prompt y obtiene un comando ingresado por el usuario.
  */
-struct cmd
-prompt(void)
+CMD prompt(void)
 {
-    struct cmd cmd;
+    CMD cmd;
     char buf[80] = { 0 };
+    char tempBuf[80] = { 0 }; //buffer auxiliar para comparar
+    tempBuf[0] = 'a';
     int32_t buflen = 0;
     char c;
     while (true) {
-        printf("$ %.*s\n", buflen, buf);
+        
+        if(strcmp(tempBuf, buf) != 0) {
+            printf("\n>> ");
+            printf("%.*s", buflen, buf);
+            strcpy(tempBuf, buf);
+        } // se imprime el prompt solo si los dos buffer son distintos (se ha escrito algo) y no están vacíos
+        
         if (kbhit()) {
             do {
                 c = getch();
@@ -50,6 +57,7 @@ prompt(void)
                     return cmd;
                 } 
                 else if (c == 127) {
+                    buf[buflen] = '\0'; // se vacía el buffer
                     if (buflen > 0) { buflen -= 1; }
                 }
                 else {
@@ -67,10 +75,11 @@ prompt(void)
  * implementadas en esta función.
  */
 int32_t
-eval(struct cmd *cmd) {
+eval(CMD *cmd) {
     if (!cmd) { return -1; }
     if (strncmp(cmd->name, "EXIT", 4) == 0 ||
         strncmp(cmd->name, "SALIR", 5) == 0) {
+        printf("\n");
         exit(0);
     }
     else if (strncmp(cmd->name, "LOAD", 4) == 0) {
