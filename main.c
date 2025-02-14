@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -7,14 +8,16 @@
 
 #include "inmanip.h"
 
+#define MAX_CMD_CHARS 50
+
 struct cmd {
-    char name[50];
-    char arg1[50];
-    char arg2[50];
+    char name[MAX_CMD_CHARS];
+    char arg1[MAX_CMD_CHARS];
+    char arg2[MAX_CMD_CHARS];
 };
 
 /*
- * Lee la siguiente línea del archivo y la evalua (imprime)
+ * Lee la siguiente línea del archivo y la imprime
  */
 int32_t
 fprintline(FILE *file) {
@@ -30,35 +33,41 @@ fprintline(FILE *file) {
 /*
  * Imprime un prompt y obtiene un comando ingresado por el usuario.
  */
-struct cmd
+struct cmd *
 prompt(void)
 {
-    struct cmd cmd;
-    char buf[80] = { 0 };
-    int32_t buflen = 0;
-    char c;
+    struct cmd *cmd = malloc(sizeof(*cmd));
+    if (!cmd) { return NULL; }
+    const size_t MAX_BUF_SIZE = 120;
+    char buf[MAX_BUF_SIZE], c;
+    buf[0] = 0;
+    int32_t buflen = 1;
     while (true) {
-        printf("$ %.*s\n", buflen, buf);
+        printf("$ %s\n", buf);
         if (kbhit()) {
             do {
                 c = getch();
-                if (c == '\n') {
-                    sscanf(buf, "%s %s %s", cmd.name, cmd.arg1, cmd.arg2);
-                    for(int i = 0; cmd.name[i] != '\0'; i += 1) {
-                        cmd.name[i] = toupper(cmd.name[i]);
+                if (c == '\n') { goto entered_cmd; } 
+                else if (c == 127 || c == 8) {
+                    if (buflen > 0) {
+                        buf[buflen - 2] = 0;
+                        buflen -= 1;
                     }
-                    return cmd;
-                } 
-                else if (c == 127) {
-                    if (buflen > 0) { buflen -= 1; }
                 }
-                else {
-                    buf[buflen] = c;
+                else if (buflen + 1 < MAX_BUF_SIZE) {
+                    buf[buflen - 1] = c;
+                    buf[buflen] = 0;
                     buflen += 1;
                 }
-            } while(kbhit());
+            } while (kbhit());
         }
     }
+entered_cmd:
+    sscanf(buf, "%s %s %s", cmd->name, cmd->arg1, cmd->arg2);
+    for(int i = 0; cmd->name[i] != '\0'; i += 1) {
+        cmd->name[i] = toupper(cmd->name[i]);
+    }
+    return cmd;
 }
 
 /*
@@ -101,9 +110,10 @@ main(void)
     int32_t buflen = 0, count = 0;
     char c;
     while (true) {
-        struct cmd cmd = prompt();
-        eval(&cmd);
+        struct cmd *cmd = prompt();
+        eval(cmd);
         getchar();
+        free(cmd);
     }
     return 0;
 }
