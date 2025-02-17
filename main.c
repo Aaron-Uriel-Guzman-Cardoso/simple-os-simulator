@@ -5,8 +5,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
-
-#include "inmanip.h"
+#include <ncurses.h>
 
 #define MAX_CMD_CHARS 50
 
@@ -34,7 +33,7 @@ fprintline(FILE *file) {
  * Imprime un prompt y obtiene un comando ingresado por el usuario.
  */
 struct cmd *
-prompt(void)
+prompt_draw(WINDOW *prompt)
 {
     struct cmd *cmd = malloc(sizeof(*cmd));
     if (!cmd) { return NULL; }
@@ -43,24 +42,21 @@ prompt(void)
     buf[0] = 0;
     int32_t buflen = 1;
     while (true) {
-        printf("$ %s\n", buf);
-        if (kbhit()) {
-            do {
-                c = getch();
-                if (c == '\n') { goto entered_cmd; } 
-                else if (c == 127 || c == 8) {
-                    if (buflen > 0) {
-                        buf[buflen - 2] = 0;
-                        buflen -= 1;
-                    }
-                }
-                else if (buflen + 1 < MAX_BUF_SIZE) {
-                    buf[buflen - 1] = c;
-                    buf[buflen] = 0;
-                    buflen += 1;
-                }
-            } while (kbhit());
+        mvwprintw(prompt, 9, 0, "$ %s\n", buf);
+        c = wgetch(prompt);
+        if (c == '\n') { goto entered_cmd; } 
+        else if (c == 127 || c == 8) {
+            if (buflen > 0) {
+                buf[buflen - 2] = 0;
+                buflen -= 1;
+            }
         }
+        else if (buflen + 1 < MAX_BUF_SIZE) {
+            buf[buflen - 1] = c;
+            buf[buflen] = 0;
+            buflen += 1;
+        }
+        wrefresh(prompt);
     }
 entered_cmd:
     sscanf(buf, "%s %s %s", cmd->name, cmd->arg1, cmd->arg2);
@@ -106,11 +102,24 @@ eval(struct cmd *cmd) {
 int
 main(void)
 {
+    initscr();
+    start_color();
+    noecho();
+    cbreak(); 
+
+    WINDOW *messages = newwin(10, 80, 0, 0);
+
+    WINDOW *registers = newwin(10, 80, 10, 0);
+
+    WINDOW *prompt = newwin(10, 80, 20, 0);
+    nodelay(prompt, TRUE);
+
+
     char buf[80] = { 0 };
     int32_t buflen = 0, count = 0;
     char c;
     while (true) {
-        struct cmd *cmd = prompt();
+        struct cmd *cmd = prompt_draw(prompt);
         eval(cmd);
         getchar();
         free(cmd);
