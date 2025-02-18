@@ -1,3 +1,4 @@
+#include <curses.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -6,10 +7,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ncurses.h>
+#include <unistd.h>
 
 #define MAX_CMD_CHARS 50
 
-struct cmd {
+struct instruction {
     char name[MAX_CMD_CHARS];
     char arg1[MAX_CMD_CHARS];
     char arg2[MAX_CMD_CHARS];
@@ -30,40 +32,68 @@ fprintline(FILE *file) {
 }
 
 /*
- * Imprime un prompt y obtiene un comando ingresado por el usuario.
+ * Decodifica la instrucción leída.
+ * Esta instrucción es una de las soportadas por la "arquitectura" que estamos
+ * construyendo.
  */
-struct cmd *
-prompt_draw(WINDOW *prompt)
+struct instruction *
+instruction_decode(const char *buf)
 {
-    struct cmd *cmd = malloc(sizeof(*cmd));
-    if (!cmd) { return NULL; }
-    const size_t MAX_BUF_SIZE = 120;
-    char buf[MAX_BUF_SIZE], c;
-    buf[0] = 0;
-    int32_t buflen = 1;
-    while (true) {
-        mvwprintw(prompt, 9, 0, "$ %s\n", buf);
-        c = wgetch(prompt);
-        if (c == '\n') { goto entered_cmd; } 
+    struct instruction *inst = malloc(sizeof(*inst));
+    if (inst) {
+        sscanf(buf, "%s %s %s", inst->name, inst->arg1, inst->arg2);
+        for(size_t i = 0; inst->name[i] != '\0'; i += 1) {
+            inst->name[i] = toupper(inst->name[i]);
+        }
+    }
+    return inst;
+}
+
+struct prompt {
+    char buf[120];
+    size_t buflen;
+    struct instruction *decoded_inst;
+    WINDOW *win;
+};
+
+enum prompt_status {
+    PROMPT_STATUS_OK,
+    PROMPT_STATUS_INSTRUCTION_DECODED
+};
+
+/*
+ * Actualiza la información del prompt del simulador, regresa una instrucción
+ * en caso de habérsele dictado una.
+ */
+enum prompt_status
+prompt_update(struct prompt *prompt)
+{
+    static char buf[120];
+    static int32_t buflen = 0;
+    char c;
+    enum prompt_status status = PROMPT_STATUS_OK;
+    if ((c = wgetch(prompt->win)) != -1) {
+        if (c == '\n') { 
+            prompt->decoded_inst = instruction_decode(buf);
+            buf[0] = buflen = 0;
+            status = PROMPT_STATUS_INSTRUCTION_DECODED;
+        } 
         else if (c == 127 || c == 8) {
             if (buflen > 0) {
-                buf[buflen - 2] = 0;
+                buf[buflen - 1] = 0;
                 buflen -= 1;
             }
         }
-        else if (buflen + 1 < MAX_BUF_SIZE) {
-            buf[buflen - 1] = c;
-            buf[buflen] = 0;
+        else if (buflen < 120) {
+            buf[buflen] = c;
+            buf[buflen + 1] = 0;
             buflen += 1;
         }
-        wrefresh(prompt);
+        wclear(prompt->win);
+        mvwprintw(prompt->win, 6, 0, "$ %s", buf);
+        wrefresh(prompt->win);
     }
-entered_cmd:
-    sscanf(buf, "%s %s %s", cmd->name, cmd->arg1, cmd->arg2);
-    for(int i = 0; cmd->name[i] != '\0'; i += 1) {
-        cmd->name[i] = toupper(cmd->name[i]);
-    }
-    return cmd;
+    return status;
 }
 
 /*
@@ -72,10 +102,10 @@ entered_cmd:
  * implementadas en esta función.
  */
 int32_t
-eval(struct cmd *cmd) {
+eval(struct instruction *cmd) {
     if (!cmd) { return -1; }
-    if (strncmp(cmd->name, "EXIT", 4) == 0 ||
-        strncmp(cmd->name, "SALIR", 5) == 0) {
+    if (strncmp(cmd->name, "EXIT", 4) == 0) {
+        endwin();
         exit(0);
     }
     else if (strncmp(cmd->name, "LOAD", 4) == 0) {
@@ -103,26 +133,27 @@ int
 main(void)
 {
     initscr();
-    start_color();
     noecho();
     cbreak(); 
 
     WINDOW *messages = newwin(10, 80, 0, 0);
+    WINDOW *registers = newwin(7, 80, 10, 0);
+    struct prompt prompt;
+    prompt.win = newwin(7, 80, 17, 0);
+    nodelay(prompt.win, TRUE); 
 
-    WINDOW *registers = newwin(10, 80, 10, 0);
-
-    WINDOW *prompt = newwin(10, 80, 20, 0);
-    nodelay(prompt, TRUE);
-
+    for (int i = 0; i < 1000; i += 1) {
+        wprintw(registers, "*");
+    }
+    wrefresh(registers);
 
     char buf[80] = { 0 };
-    int32_t buflen = 0, count = 0;
-    char c;
     while (true) {
-        struct cmd *cmd = prompt_draw(prompt);
-        eval(cmd);
-        getchar();
-        free(cmd);
+        if (prompt_update(&prompt) == PROMPT_STATUS_INSTRUCTION_DECODED) {
+            eval(prompt.decoded_inst);
+            free(prompt.decoded_inst);
+        }
+        usleep(16E3);
     }
     return 0;
 }
