@@ -91,7 +91,7 @@ enum prompt_status {
 enum prompt_status
 prompt_update(struct prompt *prompt)
 {
-    static char buf[120];
+    static char buf[80];
     static int32_t buflen = 0;
     char c;
     enum prompt_status status = PROMPT_STATUS_OK;
@@ -107,7 +107,7 @@ prompt_update(struct prompt *prompt)
                 buflen -= 1;
             }
         }
-        else if (buflen < 120) {
+        else if (buflen < 79) {
             buf[buflen] = c;
             buf[buflen + 1] = 0;
             buflen += 1;
