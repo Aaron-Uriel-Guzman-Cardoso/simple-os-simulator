@@ -54,6 +54,16 @@ fprintline(FILE *file) {
     return 1;
 }
 
+// Función para limpiar una parte específica de una ventana sin borrar el marco
+void clear_window_part(WINDOW *win, int start_y, int start_x, int height, int width) {
+    for (int y = start_y; y < start_y + height; y++) {
+        for (int x = start_x; x < start_x + width; x++) {
+            mvwaddch(win, y, x, ' ');
+        }
+    }
+    wrefresh(win);
+}
+
 /*
  * Decodifica la instrucción leída.
  * Esta instrucción es una de las soportadas por la "arquitectura" que estamos
@@ -97,6 +107,7 @@ prompt_update(struct prompt *prompt)
     enum prompt_status status = PROMPT_STATUS_OK;
     if ((c = wgetch(prompt->win)) != -1) {
         if (c == '\n') { 
+            clear_window_part(prompt->win, 1,1, 5 , 78);
             prompt->decoded_inst = instruction_decode(buf);
             buf[0] = buflen = 0;
             status = PROMPT_STATUS_INSTRUCTION_DECODED;
@@ -112,11 +123,35 @@ prompt_update(struct prompt *prompt)
             buf[buflen + 1] = 0;
             buflen += 1;
         }
-        wclear(prompt->win);
-        mvwprintw(prompt->win, 6, 0, "$ %s", buf);
+        //wclear(prompt->win);  
+        clear_window_part(prompt->win, 5, 1, 1 , 78);
         wrefresh(prompt->win);
+        mvwprintw(prompt->win, 5, 1, "$ %s", buf);
     }
     return status;
+}
+
+void instruccions_win(WINDOW *registers) {
+    box(registers, 0, 0); 
+
+    mvwprintw(registers, 0, 35, "|Registers|");
+
+    mvwprintw(registers, 2, 2, "AX: ");
+    mvwprintw(registers, 3, 2, "BX: ");
+    mvwprintw(registers, 4, 2, "CX: ");
+    mvwprintw(registers, 2, 38, "DX: ");
+    mvwprintw(registers, 3, 38, "PC: ");
+    mvwprintw(registers, 4, 38, "IR: ");
+
+    wrefresh(registers);
+}
+
+void messages_win(WINDOW *messages) {
+    box(messages, 0, 0); 
+
+    mvwprintw(messages, 0, 35, "|Messages|");
+
+    wrefresh(messages);
 }
 
 /*
@@ -158,6 +193,7 @@ main(void)
     initscr();
     noecho();
     cbreak(); 
+    curs_set(0);
 
     WINDOW *messages = newwin(10, 80, 0, 0);
     WINDOW *registers = newwin(7, 80, 10, 0);
@@ -165,13 +201,13 @@ main(void)
     prompt.win = newwin(7, 80, 17, 0);
     nodelay(prompt.win, TRUE); 
 
-    for (int i = 0; i < 1000; i += 1) {
-        wprintw(registers, "*");
-    }
-    wrefresh(registers);
+    box(prompt.win, 0, 0);
+    mvwprintw(prompt.win, 0, 35, "|Prompt|");
 
     char buf[80] = { 0 };
     while (true) {
+        instruccions_win(registers);
+        messages_win(messages);
         if (prompt_update(&prompt) == PROMPT_STATUS_INSTRUCTION_DECODED) {
             eval(prompt.decoded_inst);
             free(prompt.decoded_inst);
