@@ -91,6 +91,7 @@ struct prompt {
 
 enum prompt_status {
     PROMPT_STATUS_OK,
+    PROMPT_STATUS_INVALID,
     PROMPT_STATUS_INSTRUCTION_DECODED
 };
 
@@ -110,7 +111,12 @@ prompt_update(struct prompt *prompt)
             clear_window_part(prompt->win, 1,1, 5 , 78);
             prompt->decoded_inst = instruction_decode(buf);
             buf[0] = buflen = 0;
-            status = PROMPT_STATUS_INSTRUCTION_DECODED;
+            if(prompt){
+                status = PROMPT_STATUS_INSTRUCTION_DECODED;
+            }
+            else{
+                status = PROMPT_STATUS_INVALID;
+            }
         } 
         else if (c == 127 || c == 8) {
             if (buflen > 0) {
@@ -159,20 +165,30 @@ void messages_win(WINDOW *messages) {
  * Todas las acciones que se podrán realizar desde el prompt serán
  * implementadas en esta función.
  */
-int32_t
-eval(struct instruction *cmd) {
-    if (!cmd) { return -1; }
+int32_t 
+eval(struct instruction *cmd, WINDOW *messages) {
+    if (!cmd) { 
+        mvwprintw(messages, 1, 1, "Error: Comando no reconocido");
+        wrefresh(messages);
+        return -1;
+    }
     if (strncmp(cmd->name, "EXIT", 4) == 0) {
+        mvwprintw(messages, 1, 1, "Saliendo...");
+        wrefresh(messages);
+        usleep(90E4);
         endwin();
         exit(0);
     }
     else if (strncmp(cmd->name, "LOAD", 4) == 0) {
         if (cmd->arg1[0] == '\0') {
-            printf("Error: Falta el nombre del archivo\n");
+            mvwprintw(messages, 1, 1, "Error: Falta nombre de archivo para LOAD");
+            wrefresh(messages);
             return 1;
         }
         else {
-            printf("Cargando archivo %s\n", cmd->arg1);
+            mvwprintw(messages, 1, 1, "Cargando archivo %s\n", cmd->arg1);
+            wrefresh(messages);
+            usleep(90E4);
             FILE *file = fopen(cmd->arg1, "r");
             if (file) {
                 char line[256];
@@ -180,10 +196,15 @@ eval(struct instruction *cmd) {
                 fclose(file);
             }
             else {
-                printf("Error: No se pudo abrir el archivo %s\n",
-                        cmd->arg1);
+                mvwprintw(messages, 1, 1, "Error: No se pudo abrir el archivo %s\n", cmd->arg1);
+                wrefresh(messages);
             }
         }
+    }
+    else {
+        mvwprintw(messages, 1, 1, "Error: Comando %s no reconocido",cmd->name);
+        wrefresh(messages);
+        return 1;
     }
 }
 
@@ -209,7 +230,7 @@ main(void)
         instruccions_win(registers);
         messages_win(messages);
         if (prompt_update(&prompt) == PROMPT_STATUS_INSTRUCTION_DECODED) {
-            eval(prompt.decoded_inst);
+            eval(prompt.decoded_inst, messages);
             free(prompt.decoded_inst);
         }
         usleep(16E3);
