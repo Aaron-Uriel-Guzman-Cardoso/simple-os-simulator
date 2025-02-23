@@ -104,7 +104,7 @@ prompt_update(struct prompt *prompt)
 {
     static char buf[80];
     static int32_t buflen = 0;
-    char c;
+    int c;
     enum prompt_status status = PROMPT_STATUS_OK;
     if ((c = wgetch(prompt->win)) != -1) {
         if (c == '\n') { 
@@ -118,7 +118,7 @@ prompt_update(struct prompt *prompt)
                 status = PROMPT_STATUS_INVALID;
             }
         } 
-        else if (c == 127 || c == 8) {
+        else if (c == KEY_BACKSPACE || c == 127 || c == 8) {
             if (buflen > 0) {
                 buf[buflen - 1] = 0;
                 buflen -= 1;
@@ -221,6 +221,7 @@ main(void)
     struct prompt prompt;
     prompt.win = newwin(7, 80, 17, 0);
     nodelay(prompt.win, TRUE); 
+    keypad(prompt.win, TRUE);
 
     box(prompt.win, 0, 0);
     mvwprintw(prompt.win, 0, 35, "|Prompt|");
