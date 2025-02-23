@@ -168,40 +168,59 @@ void messages_win(WINDOW *messages) {
 int32_t 
 eval(struct instruction *cmd, WINDOW *messages) {
     if (!cmd) { 
+        clear_window_part(messages, 1,1,8,78);
         mvwprintw(messages, 1, 1, "Error: Comando no reconocido");
         wrefresh(messages);
         return -1;
     }
     if (strncmp(cmd->name, "EXIT", 4) == 0) {
+        clear_window_part(messages, 1,1,8,78);
+        wrefresh(messages);
         mvwprintw(messages, 1, 1, "Saliendo...");
         wrefresh(messages);
         usleep(90E4);
         endwin();
         exit(0);
-    }
+    }   
     else if (strncmp(cmd->name, "LOAD", 4) == 0) {
         if (cmd->arg1[0] == '\0') {
+            clear_window_part(messages, 1,1,8,78);
             mvwprintw(messages, 1, 1, "Error: Falta nombre de archivo para LOAD");
             wrefresh(messages);
             return 1;
         }
         else {
+            clear_window_part(messages, 1,1,8,78);
             mvwprintw(messages, 1, 1, "Cargando archivo %s\n", cmd->arg1);
             wrefresh(messages);
             usleep(90E4);
             FILE *file = fopen(cmd->arg1, "r");
             if (file) {
+                int line_num = 1;
                 char line[256];
-                while (!fprintline(file));
+                while (fgets(line, sizeof(line), file)) {
+                    mvwprintw(messages, line_num, 1, "%s", line);
+                    box(messages, 0, 0);
+                    mvwprintw(messages, 0, 35, "|Messages|");
+                    wrefresh(messages);
+                    line_num++;
+                    if (line_num > 8) {
+                        line_num = 1;
+                        usleep(20E4);
+                        clear_window_part(messages, 1,1,8,78);
+                    }
+                }
                 fclose(file);
-            }
+            } 
             else {
+                clear_window_part(messages, 1,1,1,78);
                 mvwprintw(messages, 1, 1, "Error: No se pudo abrir el archivo %s\n", cmd->arg1);
                 wrefresh(messages);
             }
         }
     }
     else {
+        clear_window_part(messages, 1,1,1,78);
         mvwprintw(messages, 1, 1, "Error: Comando %s no reconocido",cmd->name);
         wrefresh(messages);
         return 1;
