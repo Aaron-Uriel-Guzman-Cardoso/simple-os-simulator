@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #define MAX_CMD_CHARS 50
+#define HISTORY_SIZE 3
 
 /* Prototipos de cosas a definir */
 
@@ -31,8 +32,6 @@ struct log *log_new();
  * vieja en caso de estar ya lleno.
  */
 int32_t log_log(char str[50]) { }
-
-
 
 struct instruction {
     char name[MAX_CMD_CHARS];
@@ -82,11 +81,19 @@ instruction_decode(const char *buf)
     return inst;
 }
 
+struct instruction_history {
+    struct instruction history[HISTORY_SIZE];
+    int current;
+    int size;
+};
+
 struct prompt {
     char buf[120];
     size_t buflen;
     struct instruction *decoded_inst;
     WINDOW *win;
+    struct instruction_history hist;
+    int hist_index;
 };
 
 enum prompt_status {
@@ -108,29 +115,44 @@ prompt_update(struct prompt *prompt)
     enum prompt_status status = PROMPT_STATUS_OK;
     if ((c = wgetch(prompt->win)) != -1) {
         if (c == '\n') { 
-            clear_window_part(prompt->win, 1,1, 5 , 78);
+            clear_window_part(prompt->win, 1, 1, 5, 78);
             prompt->decoded_inst = instruction_decode(buf);
             buf[0] = buflen = 0;
-            if(prompt){
+            if (prompt->decoded_inst) {
+                // Add instruction to history
+                prompt->hist.history[prompt->hist.current] = *prompt->decoded_inst;
+                prompt->hist.current = (prompt->hist.current + 1) % HISTORY_SIZE;
+                if (prompt->hist.size < HISTORY_SIZE) {
+                    prompt->hist.size++;
+                }
+                prompt->hist_index = prompt->hist.current;
                 status = PROMPT_STATUS_INSTRUCTION_DECODED;
-            }
-            else{
+            } else {
                 status = PROMPT_STATUS_INVALID;
             }
-        } 
-        else if (c == KEY_BACKSPACE || c == 127 || c == 8) {
+        } else if (c == KEY_BACKSPACE || c == 127 || c == 8) {
             if (buflen > 0) {
                 buf[buflen - 1] = 0;
                 buflen -= 1;
             }
-        }
-        else if (buflen < 79) {
+        } else if (c == KEY_UP) {
+            if (prompt->hist.size > 0) {
+                prompt->hist_index = (prompt->hist_index - 1 + HISTORY_SIZE) % HISTORY_SIZE;
+                strncpy(buf, prompt->hist.history[prompt->hist_index].name, sizeof(buf));
+                buflen = strlen(buf);
+            }
+        } else if (c == KEY_DOWN) {
+            if (prompt->hist.size > 0) {
+                prompt->hist_index = (prompt->hist_index + 1) % HISTORY_SIZE;
+                strncpy(buf, prompt->hist.history[prompt->hist_index].name, sizeof(buf));
+                buflen = strlen(buf);
+            }
+        } else if (buflen < 79) {
             buf[buflen] = c;
             buf[buflen + 1] = 0;
             buflen += 1;
         }
-        //wclear(prompt->win);  
-        clear_window_part(prompt->win, 5, 1, 1 , 78);
+        clear_window_part(prompt->win, 5, 1, 1, 78);
         wrefresh(prompt->win);
         mvwprintw(prompt->win, 5, 1, "$ %s", buf);
     }
@@ -222,6 +244,9 @@ main(void)
     prompt.win = newwin(7, 80, 17, 0);
     nodelay(prompt.win, TRUE); 
     keypad(prompt.win, TRUE);
+    prompt.hist.current = 0;
+    prompt.hist.size = 0;
+    prompt.hist_index = 0;
 
     box(prompt.win, 0, 0);
     mvwprintw(prompt.win, 0, 35, "|Prompt|");
