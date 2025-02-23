@@ -79,7 +79,7 @@ int32_t history_count = 0;
 enum prompt_status prompt_update(struct prompt *prompt, struct instruction *history) {
     static char buf[80];
     static int32_t buflen = 0;
-    char c;
+    int c;
     enum prompt_status status = PROMPT_STATUS_OK;
     if ((c = wgetch(prompt->win)) != -1) {
         if (c == '\n') { 
@@ -124,6 +124,7 @@ enum prompt_status prompt_update(struct prompt *prompt, struct instruction *hist
                 strcat(buf, history_newest->arg2);
                 buflen = strlen(buf);
             }
+           //mvwprintw(prompt->win, 5, 1, "$ teclaarriba");
         }
         else if(c == KEY_DOWN){
             if(history_oldest != NULL){
@@ -134,8 +135,9 @@ enum prompt_status prompt_update(struct prompt *prompt, struct instruction *hist
                 strcat(buf, history_oldest->arg2);
                 buflen = strlen(buf);
             }
+            //mvwprintw(prompt->win, 5, 1, "$ teclaabajo");
         }
-        else if (c == 127 || c == 8) {
+        else if (c == KEY_BACKSPACE || c == 127 || c == 8) {
             if (buflen > 0) {
                 buf[buflen - 1] = 0;
                 buflen -= 1;
@@ -216,7 +218,6 @@ int32_t eval(struct instruction *cmd, WINDOW *messages) {
 int main(void) {
     initscr();
     noecho();
-    cbreak(); 
     curs_set(0);
 
     WINDOW *messages = newwin(10, 80, 0, 0);
@@ -225,6 +226,8 @@ int main(void) {
     prompt.win = newwin(7, 80, 17, 0);
     nodelay(prompt.win, TRUE);
     keypad(prompt.win, TRUE);  // Habilitar keypad para la ventana del prompt
+    cbreak(); 
+    
 
     box(prompt.win, 0, 0);
     mvwprintw(prompt.win, 0, 35, "|Prompt|");
