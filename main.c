@@ -158,9 +158,14 @@ instruction_decode(const char *buf)
 {
     struct instruction *inst = malloc(sizeof(*inst));
     if (inst) {
-        inst->name[0] = '\0';
-        inst->arg1[0] = '\0';
-        inst->arg2[0] = '\0';
+        //inst->name[0] = '\0';
+        //inst->arg1[0] = '\0';
+        //inst->arg2[0] = '\0';
+
+        memset(inst->name, 0, sizeof(inst->name));
+        memset(inst->arg1, 0, sizeof(inst->arg1));
+        memset(inst->arg2, 0, sizeof(inst->arg2));
+
         sscanf(buf, "%s %s %s", inst->name, inst->arg1, inst->arg2);
         for(size_t i = 0; inst->name[i] != '\0'; i += 1) {
             inst->name[i] = toupper(inst->name[i]);
