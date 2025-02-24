@@ -12,26 +12,118 @@
 #define MAX_CMD_CHARS 50
 #define HISTORY_SIZE 3
 
+typedef struct {
+    int AX;
+    int BX;
+    int CX;
+    int DX;
+    int PC;
+    char IR[100];
+} PCB;
+
+void mostrarPCB(PCB *pcb) {
+    printf("AX: %d\n", pcb->AX);
+    printf("BX: %d\n", pcb->BX);
+    printf("CX: %d\n", pcb->CX);
+    printf("DX: %d\n", pcb->DX);
+    printf("PC: %d\n", pcb->PC);
+    printf("IR: %s\n", pcb->IR);
+}
+
+void inicializarPCB(PCB *pcb) {
+    pcb->AX = 0;
+    pcb->BX = 0;
+    pcb->CX = 0;
+    pcb->DX = 0;
+    pcb->PC = 0;
+    memset(pcb->IR, 0, sizeof(pcb->IR));
+}
+
+// Función para procesar una instrucción
+void procesar_instruccion(PCB *pcb, const char *instr, WINDOW *messages) {
+    char op[4], p1[10], p2[10];
+    int val1, val2;
+
+    usleep(16E3);
+
+    // Actualizar el campo IR del PCB con la instrucción actual
+    strncpy(pcb->IR, instr, sizeof(pcb->IR) - 1);
+    pcb->IR[sizeof(pcb->IR) - 1] = '\0';
+
+    sscanf(instr, "%s %s %s", op, p1, p2);
+    // Pasar a mayúsculas los strings para evitar errores
+    for(size_t i = 0; op[i] != '\0'; i += 1) {
+        op[i] = toupper(op[i]);
+    }
+    for(size_t i = 0; p1[i] != '\0'; i += 1) {
+        p1[i] = toupper(p1[i]);
+    }
+    for(size_t i = 0; p2[i] != '\0'; i += 1) {
+        p2[i] = toupper(p2[i]);
+    }
+
+    if (strcmp(op, "MOV") == 0) {
+        val2 = isdigit(p2[0]) ? atoi(p2) : (strcmp(p2, "AX") == 0 ? pcb->AX : strcmp(p2, "BX") == 0 ? pcb->BX : strcmp(p2, "CX") == 0 ? pcb->CX : strcmp(p2, "DX") == 0 ? pcb->DX : 0);
+        if (strcmp(p1, "AX") == 0) pcb->AX = val2;
+        else if (strcmp(p1, "BX") == 0) pcb->BX = val2;
+        else if (strcmp(p1, "CX") == 0) pcb->CX = val2;
+        else if (strcmp(p1, "DX") == 0) pcb->DX = val2;
+    } else if (strcmp(op, "ADD") == 0) {
+        val2 = isdigit(p2[0]) ? atoi(p2) : (strcmp(p2, "AX") == 0 ? pcb->AX : strcmp(p2, "BX") == 0 ? pcb->BX : strcmp(p2, "CX") == 0 ? pcb->CX : strcmp(p2, "DX") == 0 ? pcb->DX : 0);
+        if (strcmp(p1, "AX") == 0) pcb->AX += val2;
+        else if (strcmp(p1, "BX") == 0) pcb->BX += val2;
+        else if (strcmp(p1, "CX") == 0) pcb->CX += val2;
+        else if (strcmp(p1, "DX") == 0) pcb->DX += val2;
+    } else if (strcmp(op, "SUB") == 0) {
+        val2 = isdigit(p2[0]) ? atoi(p2) : (strcmp(p2, "AX") == 0 ? pcb->AX : strcmp(p2, "BX") == 0 ? pcb->BX : strcmp(p2, "CX") == 0 ? pcb->CX : strcmp(p2, "DX") == 0 ? pcb->DX : 0);
+        if (strcmp(p1, "AX") == 0) pcb->AX -= val2;
+        else if (strcmp(p1, "BX") == 0) pcb->BX -= val2;
+        else if (strcmp(p1, "CX") == 0) pcb->CX -= val2;
+        else if (strcmp(p1, "DX") == 0) pcb->DX -= val2;
+    } else if (strcmp(op, "MUL") == 0) {
+        val2 = isdigit(p2[0]) ? atoi(p2) : (strcmp(p2, "AX") == 0 ? pcb->AX : strcmp(p2, "BX") == 0 ? pcb->BX : strcmp(p2, "CX") == 0 ? pcb->CX : strcmp(p2, "DX") == 0 ? pcb->DX : 0);
+        if (strcmp(p1, "AX") == 0) pcb->AX *= val2;
+        else if (strcmp(p1, "BX") == 0) pcb->BX *= val2;
+        else if (strcmp(p1, "CX") == 0) pcb->CX *= val2;
+        else if (strcmp(p1, "DX") == 0) pcb->DX *= val2;
+    } else if (strcmp(op, "DIV") == 0) {
+        val2 = isdigit(p2[0]) ? atoi(p2) : (strcmp(p2, "AX") == 0 ? pcb->AX : strcmp(p2, "BX") == 0 ? pcb->BX : strcmp(p2, "CX") == 0 ? pcb->CX : strcmp(p2, "DX") == 0 ? pcb->DX : 0);
+        if (val2 != 0) {
+            if (strcmp(p1, "AX") == 0) pcb->AX /= val2;
+            else if (strcmp(p1, "BX") == 0) pcb->BX /= val2;
+            else if (strcmp(p1, "CX") == 0) pcb->CX /= val2;
+            else if (strcmp(p1, "DX") == 0) pcb->DX /= val2;
+        } else {
+            mvwprintw(messages, 1, 1, "Error: Division por cero");
+            wrefresh(messages);
+        }
+    } else if (strcmp(op, "INC") == 0) {
+        if (strcmp(p1, "AX") == 0) pcb->AX++;
+        else if (strcmp(p1, "BX") == 0) pcb->BX++;
+        else if (strcmp(p1, "CX") == 0) pcb->CX++;
+        else if (strcmp(p1, "DX") == 0) pcb->DX++;
+    } else if (strcmp(op, "DEC") == 0) {
+        if (strcmp(p1, "AX") == 0) pcb->AX--;
+        else if (strcmp(p1, "BX") == 0) pcb->BX--;
+        else if (strcmp(p1, "CX") == 0) pcb->CX--;
+        else if (strcmp(p1, "DX") == 0) pcb->DX--;
+    } else if (strcmp(op, "END") == 0) {
+        endwin();
+        //exit(0);
+    } else {
+        mvwprintw(messages, 1, 1, "Error: Instruccion %s no reconocida\n", instr);
+        wrefresh(messages);
+    }
+
+    pcb->PC++;
+}
+
 /* Prototipos de cosas a definir */
 
 /* Estructura utilizada para guardar el historial de los textos a mostrar en
  * mensajes y prompt.
  * Esta debería ser una cola circular.
  */
-struct log {
-    char strings[10][50];
-    size_t capacity;
-    size_t last;
-};
-
-/* Crea una nueva instancia de registro, utilizado para prompt y mensajes
- */
-struct log *log_new();
-
-/* Registra una nueva cadena de texto en el registro, elimina la cadena más
- * vieja en caso de estar ya lleno.
- */
-int32_t log_log(char str[50]) { }
 
 struct instruction {
     char name[MAX_CMD_CHARS];
@@ -76,6 +168,12 @@ instruction_decode(const char *buf)
         sscanf(buf, "%s %s %s", inst->name, inst->arg1, inst->arg2);
         for(size_t i = 0; inst->name[i] != '\0'; i += 1) {
             inst->name[i] = toupper(inst->name[i]);
+        }
+        for(size_t i = 0; inst->arg1[i] != '\0'; i += 1) {
+            inst->arg1[i] = toupper(inst->arg1[i]);
+        }
+        for(size_t i = 0; inst->arg2[i] != '\0'; i += 1) {
+            inst->arg2[i] = toupper(inst->arg2[i]);
         }
     }
     return inst;
@@ -159,19 +257,19 @@ prompt_update(struct prompt *prompt)
     return status;
 }
 
-void instruccions_win(WINDOW *registers) {
-    box(registers, 0, 0); 
+void instruccions_win(WINDOW *win, PCB *pcb) {
+    box(win, 0, 0); 
 
-    mvwprintw(registers, 0, 35, "|Registers|");
+    mvwprintw(win, 0, 35, "|Registers|");
 
-    mvwprintw(registers, 2, 2, "AX: ");
-    mvwprintw(registers, 3, 2, "BX: ");
-    mvwprintw(registers, 4, 2, "CX: ");
-    mvwprintw(registers, 2, 38, "DX: ");
-    mvwprintw(registers, 3, 38, "PC: ");
-    mvwprintw(registers, 4, 38, "IR: ");
+    mvwprintw(win, 2, 2, "AX: %d", pcb->AX);
+    mvwprintw(win, 3, 2, "BX: %d", pcb->BX);
+    mvwprintw(win, 4, 2, "CX: %d", pcb->CX);
+    mvwprintw(win, 2, 35, "DX: %d", pcb->DX);
+    mvwprintw(win, 3, 35, "PC: %d", pcb->PC);
+    mvwprintw(win, 4, 35, "IR: %s", pcb->IR);
 
-    wrefresh(registers);
+    wrefresh(win);
 }
 
 void messages_win(WINDOW *messages) {
@@ -188,7 +286,7 @@ void messages_win(WINDOW *messages) {
  * implementadas en esta función.
  */
 int32_t 
-eval(struct instruction *cmd, WINDOW *messages) {
+eval(struct instruction *cmd, WINDOW *messages, PCB *pcb) {
     if (!cmd) { 
         clear_window_part(messages, 1,1,8,78);
         mvwprintw(messages, 1, 1, "Error: Comando no reconocido");
@@ -212,6 +310,7 @@ eval(struct instruction *cmd, WINDOW *messages) {
             return 1;
         }
         else {
+            inicializarPCB(pcb);
             clear_window_part(messages, 1,1,8,78);
             mvwprintw(messages, 1, 1, "Cargando archivo %s\n", cmd->arg1);
             wrefresh(messages);
@@ -221,6 +320,8 @@ eval(struct instruction *cmd, WINDOW *messages) {
                 int line_num = 1;
                 char line[256];
                 while (fgets(line, sizeof(line), file)) {
+                    line[strcspn(line, "\n")] = '\0'; // Eliminar el salto de línea
+                    procesar_instruccion(pcb, line, messages);
                     mvwprintw(messages, line_num, 1, "%s", line);
                     box(messages, 0, 0);
                     mvwprintw(messages, 0, 35, "|Messages|");
@@ -257,6 +358,9 @@ main(void)
     cbreak(); 
     curs_set(0);
 
+    PCB pcb;
+    inicializarPCB(&pcb);
+
     WINDOW *messages = newwin(10, 80, 0, 0);
     WINDOW *registers = newwin(7, 80, 10, 0);
     struct prompt prompt;
@@ -267,18 +371,20 @@ main(void)
     prompt.hist.size = 0;
     prompt.hist_index = 0;
 
+
     box(prompt.win, 0, 0);
     mvwprintw(prompt.win, 0, 35, "|Prompt|");
 
     char buf[80] = { 0 };
     while (true) {
-        instruccions_win(registers);
+        instruccions_win(registers, &pcb);
         messages_win(messages);
         if (prompt_update(&prompt) == PROMPT_STATUS_INSTRUCTION_DECODED) {
-            eval(prompt.decoded_inst, messages);
+            eval(prompt.decoded_inst, messages, &pcb);
             free(prompt.decoded_inst);
         }
         usleep(16E3);
     }
+    endwin();
     return 0;
 }
