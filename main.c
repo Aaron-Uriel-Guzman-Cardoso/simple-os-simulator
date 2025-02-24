@@ -118,13 +118,6 @@ void procesar_instruccion(PCB *pcb, const char *instr, WINDOW *messages) {
     pcb->PC++;
 }
 
-/* Prototipos de cosas a definir */
-
-/* Estructura utilizada para guardar el historial de los textos a mostrar en
- * mensajes y prompt.
- * Esta debería ser una cola circular.
- */
-
 struct instruction {
     char name[MAX_CMD_CHARS];
     char arg1[MAX_CMD_CHARS];
