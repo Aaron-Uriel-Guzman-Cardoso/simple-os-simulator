@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "inmanip.h"
+#include "../include/cpu.h"
 
 #define MAX_CMD_CHARS 50
 
@@ -16,19 +16,8 @@ struct cmd {
     char arg2[MAX_CMD_CHARS];
 };
 
-/*
- * Lee la siguiente línea del archivo y la imprime
- */
-int32_t
-fprintline(FILE *file) {
-    if (!file) { return -1; }
-    char line[256];
-    if (fgets(line, sizeof(line), file)) {
-        printf("%s", line);
-        return 0;
-    }
-    return 1;
-}
+struct pcb *pcb;
+
 
 /*
  * Imprime un prompt y obtiene un comando ingresado por el usuario.
@@ -39,30 +28,7 @@ prompt(void)
     struct cmd *cmd = malloc(sizeof(*cmd));
     if (!cmd) { return NULL; }
     const size_t MAX_BUF_SIZE = 120;
-    char buf[MAX_BUF_SIZE], c;
-    buf[0] = 0;
-    int32_t buflen = 1;
-    while (true) {
-        printf("$ %s\n", buf);
-        if (kbhit()) {
-            do {
-                c = getch();
-                if (c == '\n') { goto entered_cmd; } 
-                else if (c == 127 || c == 8) {
-                    if (buflen > 0) {
-                        buf[buflen - 2] = 0;
-                        buflen -= 1;
-                    }
-                }
-                else if (buflen + 1 < MAX_BUF_SIZE) {
-                    buf[buflen - 1] = c;
-                    buf[buflen] = 0;
-                    buflen += 1;
-                }
-            } while (kbhit());
-        }
-    }
-entered_cmd:
+    char buf[] = "LOAD PROG", c;
     sscanf(buf, "%s %s %s", cmd->name, cmd->arg1, cmd->arg2);
     for(int i = 0; cmd->name[i] != '\0'; i += 1) {
         cmd->name[i] = toupper(cmd->name[i]);
@@ -92,7 +58,7 @@ eval(struct cmd *cmd) {
             FILE *file = fopen(cmd->arg1, "r");
             if (file) {
                 char line[256];
-                while (!fprintline(file));
+
                 fclose(file);
             }
             else {
@@ -106,14 +72,10 @@ eval(struct cmd *cmd) {
 int
 main(void)
 {
-    char buf[80] = { 0 };
-    int32_t buflen = 0, count = 0;
-    char c;
-    while (true) {
-        struct cmd *cmd = prompt();
-        eval(cmd);
-        getchar();
-        free(cmd);
+    struct cpu *cpu = cpu_new();
+    cpu_load_inst(cpu, "PROG");
+    for (;;) {
+        cpu_next_cycle(cpu);
     }
     return 0;
 }
