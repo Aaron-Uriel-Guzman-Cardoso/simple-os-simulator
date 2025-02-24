@@ -18,21 +18,6 @@
  * mensajes y prompt.
  * Esta debería ser una cola circular.
  */
-struct log {
-    char strings[10][50];
-    size_t capacity;
-    size_t last;
-};
-
-/* Crea una nueva instancia de registro, utilizado para prompt y mensajes
- */
-struct log *log_new();
-
-/* Registra una nueva cadena de texto en el registro, elimina la cadena más
- * vieja en caso de estar ya lleno.
- */
-int32_t log_log(char str[50]) { }
-
 struct instruction {
     char name[MAX_CMD_CHARS];
     char arg1[MAX_CMD_CHARS];
