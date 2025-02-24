@@ -210,7 +210,7 @@ enum prompt_status {
 enum prompt_status
 prompt_update(struct prompt *prompt)
 {
-    static char buf[80];
+    static char buf[200];
     static int32_t buflen = 0;
     int c;
     enum prompt_status status = PROMPT_STATUS_OK;
