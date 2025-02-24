@@ -165,6 +165,9 @@ instruction_decode(const char *buf)
 {
     struct instruction *inst = malloc(sizeof(*inst));
     if (inst) {
+        inst->name[0] = '\0';
+        inst->arg1[0] = '\0';
+        inst->arg2[0] = '\0';
         sscanf(buf, "%s %s %s", inst->name, inst->arg1, inst->arg2);
         for(size_t i = 0; inst->name[i] != '\0'; i += 1) {
             inst->name[i] = toupper(inst->name[i]);
@@ -217,7 +220,6 @@ prompt_update(struct prompt *prompt)
             prompt->decoded_inst = instruction_decode(buf);
             buf[0] = buflen = 0;
             if (prompt->decoded_inst) {
-                // Add instruction to history
                 prompt->hist.history[prompt->hist.current] = *prompt->decoded_inst;
                 prompt->hist.current = (prompt->hist.current + 1) % HISTORY_SIZE;
                 if (prompt->hist.size < HISTORY_SIZE) {
@@ -236,13 +238,13 @@ prompt_update(struct prompt *prompt)
         } else if (c == KEY_UP) {
             if (prompt->hist.size > 0) {
                 prompt->hist_index = (prompt->hist_index - 1 + HISTORY_SIZE) % HISTORY_SIZE;
-                strncpy(buf, prompt->hist.history[prompt->hist_index].name, sizeof(buf));
+                snprintf(buf, sizeof(buf), "%s %s %s", prompt->hist.history[prompt->hist_index].name, prompt->hist.history[prompt->hist_index].arg1, prompt->hist.history[prompt->hist_index].arg2);
                 buflen = strlen(buf);
             }
         } else if (c == KEY_DOWN) {
             if (prompt->hist.size > 0) {
                 prompt->hist_index = (prompt->hist_index + 1) % HISTORY_SIZE;
-                strncpy(buf, prompt->hist.history[prompt->hist_index].name, sizeof(buf));
+                snprintf(buf, sizeof(buf), "%s %s %s", prompt->hist.history[prompt->hist_index].name, prompt->hist.history[prompt->hist_index].arg1, prompt->hist.history[prompt->hist_index].arg2);
                 buflen = strlen(buf);
             }
         } else if (buflen < 79) {
