@@ -251,6 +251,13 @@ prompt_update(struct prompt *prompt)
             buflen += 1;
         }
         clear_window_part(prompt->win, 5, 1, 1, 78);
+        for (int i = 0; i < prompt->hist.size; i++) {
+            int index = (prompt->hist.current - 1 - i + HISTORY_SIZE) % HISTORY_SIZE;
+            mvwprintw(prompt->win, 4 - i, 1, "$ %s %s %s", 
+                      prompt->hist.history[index].name, 
+                      prompt->hist.history[index].arg1, 
+                      prompt->hist.history[index].arg2);
+        }
         wrefresh(prompt->win);
         mvwprintw(prompt->win, 5, 1, "$ %s", buf);
     }
