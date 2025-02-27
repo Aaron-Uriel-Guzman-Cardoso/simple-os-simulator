@@ -118,6 +118,8 @@ void procesar_instruccion(PCB *pcb, const char *instr, WINDOW *messages) {
     pcb->PC++;
 }
 
+// Estructura en donde se almacenan los prompts ingresados
+
 struct instruction {
     char name[MAX_CMD_CHARS];
     char arg1[MAX_CMD_CHARS];
@@ -125,8 +127,15 @@ struct instruction {
 };
 
 /*
- * Lee la siguiente línea del archivo y la imprime
- */
+
+/*Prototipo: int32_t fprintline(FILE *file);
+Propósito: Leer e imprimir líneas de un archivo
+Entradas: Puntero de tipo archivo ( FILE *file );
+Descripción: La función verifica primero si el puntero es nulo, si es así retorna -1 representando
+un fallo. Si el archivo es válido, lee una línea del archivo usando fgets para ser almacenada en el 
+arreglo line. 
+*/
+
 int32_t
 fprintline(FILE *file) {
     if (!file) { return -1; }
