@@ -126,11 +126,10 @@ struct instruction {
     char arg2[MAX_CMD_CHARS];
 };
 
-/*
-
 /*Prototipo: int32_t fprintline(FILE *file);
 Propósito: Leer e imprimir líneas de un archivo
-Entradas: Puntero de tipo archivo ( FILE *file );
+Entradas: Puntero de tipo archivo ( FILE *file )
+Salidas: Entero de 32 bits de valor -1, 0 o 1
 Descripción: La función verifica primero si el puntero es nulo, si es así retorna -1 representando
 un fallo. Si el archivo es válido, lee una línea del archivo usando fgets para ser almacenada en el 
 arreglo line. 
@@ -147,7 +146,17 @@ fprintline(FILE *file) {
     return 1;
 }
 
-// Función para limpiar una parte específica de una ventana sin borrar el marco
+/*Prototipo: void clear_window_part(WINDOW *win, int start_y, int start_x, int height, int width);
+Propósito: Limpiar una parte específica de una ventana sin borrar el marco
+Entradas: Puntero de tipo ventana de ncurses (WINDOW *win), variables de tipo entero (start_y, 
+start_x, height, width)
+Salidas: Ninguna
+Descripción: Mediante bucles anidados va recorriendo la venta a lo ancho y alto (con límites especi-
+ficados por height y width) y por cada iteración mvwaddch coloca un caracter de espacio vacío ' ', 
+reemplazando los caracteres que estan en esas coordenadas. Finalmente wrefresh refresca la ventana 
+reflejando los cambios.
+*/
+
 void clear_window_part(WINDOW *win, int start_y, int start_x, int height, int width) {
     for (int y = start_y; y < start_y + height; y++) {
         for (int x = start_x; x < start_x + width; x++) {
