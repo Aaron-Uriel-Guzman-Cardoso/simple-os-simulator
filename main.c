@@ -66,7 +66,7 @@ void procesar_instruccion(PCB *pcb, const char *instr, WINDOW *messages) {
 
     /* Actualizar el campo IR del PCB con la instrucción actual */
     strncpy(pcb->IR, instr, sizeof(pcb->IR) - 1);
-    pcb->IR[sizeof(pcb->IR) - 1] = '\0';
+    pcb->IR[strlen(instr)] = '\0';
 
     sscanf(instr, "%s %s %s", op, p1, p2);
     /* Pasar a mayúsculas las cadenas para evitar errores */
@@ -282,19 +282,19 @@ enum prompt_status {
 };
 
 /*
- *Prototipo: enum prompt_status prompt_update(struct prompt *prompt);
- *Propósito: Actualiza la información del prompt del simulador.
- *Entradas: Puntero a una estructura de tipo prompt (struct prompt *prompt)
- *Salidas: Variable de tipo enum prompt_status (status)
- *Descripción: La función usa wgetch para leer un caracter de la ventana del prompt (prompt->win), si el
- *caracter leído es un enter si limpia la línea del prompt y se guarda la instrucción decodificada y se 
- *guarda en el historial y se cambia el status a codificado. Si el caracter leído es una tecla backspace
- *se limpia un caracter en el buffer y se reduce su tamaño en 1. Si se detecta una tecla KEY_UP se reduce
- *el index para guardar en el buffer la instrucción anterior, en cambio si es un KEY_DOWN se aumenta el 
- *index para guardar en el buffer la instrucción más nueva con respecto a la actual. En cualquier otro ca-
- *so, mientras la longitud del buffer sea menor a 200 se guarda el caracter en el arreglo del buffer. 
- *Finalmente se limpia la línea del prompt y se imprime el historial de las últimas 3 instrucciones. Se
- *limpia la ventana y se vuelve a imprimir el buffer.     
+ * Prototipo: enum prompt_status prompt_update(struct prompt *prompt);
+ * Propósito: Actualiza la información del prompt del simulador.
+ * Entradas: Puntero a una estructura de tipo prompt (struct prompt *prompt)
+ * Salidas: Variable de tipo enum prompt_status (status)
+ * Descripción: La función usa wgetch para leer un caracter de la ventana del prompt (prompt->win), si el
+ * caracter leído es un enter si limpia la línea del prompt y se guarda la instrucción decodificada y se 
+ * guarda en el historial y se cambia el status a codificado. Si el caracter leído es una tecla backspace
+ * se limpia un caracter en el buffer y se reduce su tamaño en 1. Si se detecta una tecla KEY_UP se reduce
+ * el index para guardar en el buffer la instrucción anterior, en cambio si es un KEY_DOWN se aumenta el 
+ * index para guardar en el buffer la instrucción más nueva con respecto a la actual. En cualquier otro ca-
+ * so, mientras la longitud del buffer sea menor a 200 se guarda el caracter en el arreglo del buffer. 
+ * Finalmente se limpia la línea del prompt y se imprime el historial de las últimas 3 instrucciones. Se
+ * limpia la ventana y se vuelve a imprimir el buffer.     
  */
 enum prompt_status
 prompt_update(struct prompt *prompt)
@@ -379,10 +379,15 @@ void messages_win(WINDOW *messages) {
 }
 
 /*
- * Evalua el comando pasado como argumento.
- * Todas las acciones que se podrán realizar desde el prompt serán
- * implementadas en esta función.
+ *Prototipo: int32_t eval(struct instruction *cmd, WINDOW *messages, PCB *pcb) {
+ *Propósito: Esta función evalúa e interpreta un comando ingresado por el usuario
+ *y ejecuta la acción correspondiente, como salir del programa o cargar un archivo en el PCB.
+ *Entradas: cmd(Puntero con la instruccion leida), messages(Puntero a la ventana messages) y pcb 
+ *(Puntero a la estructura PCB)
+ *Salidas: Retorna 0 en caso de exito, 1 en caso de error y -1 en caso de un comando no reconocido.
+ *Descripción: 
  */
+ 
 int32_t 
 eval(struct instruction *cmd, WINDOW *messages, PCB *pcb) {
     if (!cmd) { 
@@ -447,6 +452,19 @@ eval(struct instruction *cmd, WINDOW *messages, PCB *pcb) {
         return 1;
     }
 }
+
+/*
+ * Prototipo: int main(void);
+ * Propósito: Ejecuta las funciones que dan forma a las ventanas
+ * Entradas: Void
+ * Salidas: Entero de valor 0
+ * Descripción: En esta función se inicializa la pantalla para el uso de ncurses, se incializa el PCB 
+ * y se crean las ventanas para los mensajes, los registros y el prompt. Se activan también las teclas
+ * especiales t se inicializan los valores del historial en 0. Se crea además un marco para el prompt.
+ * En el bucle principal se actualizan indefinidamente las ventanas de mensajes y registros. Se se ha
+ * agregado una instrucción se evalúa la misma y se libera su espacio de memoria. Se define una pausa
+ * para que se ejecute la verificación de las teclas que se presionan.
+ */
 
 int
 main(void)
