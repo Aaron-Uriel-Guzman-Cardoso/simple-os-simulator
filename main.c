@@ -173,14 +173,14 @@ struct instruction {
 };
 
 /*
-    Prototipo: int32_t fprintline(FILE *file);
-    Propósito: Leer e imprimir líneas de un archivo
-    Entradas: Puntero de tipo archivo ( FILE *file )
-    Salidas: Entero de 32 bits de valor -1, 0 o 1
-    Descripción: La función verifica primero si el puntero es nulo, si es así retorna -1 representando
-    un fallo. Si el archivo es válido, lee una línea del archivo usando fgets para ser almacenada en el 
-    arreglo line. 
-*/
+ *Prototipo: int32_t fprintline(FILE *file);
+ *Propósito: Leer e imprimir líneas de un archivo
+ *Entradas: Puntero de tipo archivo ( FILE *file )
+ *Salidas: Entero de 32 bits de valor -1, 0 o 1
+ *Descripción: La función verifica primero si el puntero es nulo, si es así retorna -1 representando
+ *un fallo. Si el archivo es válido, lee una línea del archivo usando fgets para ser almacenada en el 
+ *arreglo line. 
+ */
 
 int32_t
 fprintline(FILE *file) {
@@ -194,16 +194,16 @@ fprintline(FILE *file) {
 }
 
 /*
-    Prototipo: void clear_window_part(WINDOW *win, int start_y, int start_x, int height, int width);
-    Propósito: Limpiar una parte específica de una ventana sin borrar el marco
-    Entradas: Puntero de tipo ventana de ncurses (WINDOW *win), variables de tipo entero (start_y, 
-    start_x, height, width)
-    Salidas: Ninguna
-    Descripción: Mediante bucles anidados va recorriendo la venta a lo ancho y alto (con límites especi-
-    ficados por height y width) y por cada iteración mvwaddch coloca un caracter de espacio vacío ' ', 
-    reemplazando los caracteres que estan en esas coordenadas. Finalmente wrefresh refresca la ventana 
-    reflejando los cambios.
-*/
+ *Prototipo: void clear_window_part(WINDOW *win, int start_y, int start_x, int height, int width);
+ *Propósito: Limpiar una parte específica de una ventana sin borrar el marco
+ *Entradas: Puntero de tipo ventana de ncurses (WINDOW *win), variables de tipo entero (start_y, 
+ *start_x, height, width)
+ *Salidas: Ninguna
+ *Descripción: Mediante bucles anidados va recorriendo la venta a lo ancho y alto (con límites especi-
+ *ficados por height y width) y por cada iteración mvwaddch coloca un caracter de espacio vacío ' ', 
+ *reemplazando los caracteres que estan en esas coordenadas. Finalmente wrefresh refresca la ventana 
+ *reflejando los cambios.
+ */
 
 void clear_window_part(WINDOW *win, int start_y, int start_x, int height, int width) {
     for (int y = start_y; y < start_y + height; y++) {
@@ -215,17 +215,17 @@ void clear_window_part(WINDOW *win, int start_y, int start_x, int height, int wi
 }
 
 /*
-    Prototipo: struct instruction *instruction_decode(const char *buf);
-    Propósito: Decodifica la cadena de caracteres que ha ingresado el usuario y que posteriormente ha sido
-    almacenada en el buffer.
-    Entradas: Puntero a un arreglo tipo char (const char *buf)
-    Salidas: Puntero a una estructura de tipo instruction (struct instruction *inst)
-    Descripción: Se asigna memoria a una estructura de tipo instruction mediante la función malloc, si esto
-    tiene éxito se inicializan los campos de la instrucción a cero usando memset. Sscanf extrae la instruc-
-    ción y sus dos argumentos del buffer y los almacena en los campos name, arg1 y arg2 de la estructura
-    inst. Finalmente se convierten todos los caracteres a mayúsculas. Finalmente se regresa un puntero a la
-    instrucción codificada. 
-*/
+ *Prototipo: struct instruction *instruction_decode(const char *buf);
+ *Propósito: Decodifica la cadena de caracteres que ha ingresado el usuario y que posteriormente ha sido
+ *almacenada en el buffer.
+ *Entradas: Puntero a un arreglo tipo char (const char *buf)
+ *Salidas: Puntero a una estructura de tipo instruction (struct instruction *inst)
+ *Descripción: Se asigna memoria a una estructura de tipo instruction mediante la función malloc, si esto
+ *tiene éxito se inicializan los campos de la instrucción a cero usando memset. Sscanf extrae la instruc-
+ *ción y sus dos argumentos del buffer y los almacena en los campos name, arg1 y arg2 de la estructura
+ *inst. Finalmente se convierten todos los caracteres a mayúsculas. Finalmente se regresa un puntero a la
+ *instrucción codificada. 
+ */
 
 struct instruction *
 instruction_decode(const char *buf)
@@ -282,20 +282,19 @@ enum prompt_status {
 };
 
 /*
-    Prototipo: enum prompt_status prompt_update(struct prompt *prompt);
-    Propósito: Actualiza la información del prompt del simulador, regresa una instrucción en caso de 
-    habérsele dictado una.
-    Entradas: Puntero a una estructura de tipo prompt (struct prompt *prompt)
-    Salidas: Variable de tipo enum prompt_status (status)
-    Descripción: La función usa wgetch para leer un caracter de la ventana del prompt (prompt->win), si el
-    caracter leído es un enter si limpia la línea del prompt y se guarda la instrucción decodificada y se 
-    guarda en el historial y se cambia el status a codificado. Si el caracter leído es una tecla backspace
-    se limpia un caracter en el buffer y se reduce su tamaño en 1. Si se detecta una tecla KEY_UP se reduce
-    el index para guardar en el buffer la instrucción anterior, en cambio si es un KEY_DOWN se aumenta el 
-    index para guardar en el buffer la instrucción más nueva con respecto a la actual. En cualquier otro ca-
-    so, mientras la longitud del buffer sea menor a 200 se guarda el caracter en el arreglo del buffer. 
-    Finalmente se limpia la línea del prompt y se imprime el historial de las últimas 3 instrucciones. Se
-    limpia la ventana y se vuelve a imprimir el buffer.     
+ *Prototipo: enum prompt_status prompt_update(struct prompt *prompt);
+ *Propósito: Actualiza la información del prompt del simulador.
+ *Entradas: Puntero a una estructura de tipo prompt (struct prompt *prompt)
+ *Salidas: Variable de tipo enum prompt_status (status)
+ *Descripción: La función usa wgetch para leer un caracter de la ventana del prompt (prompt->win), si el
+ *caracter leído es un enter si limpia la línea del prompt y se guarda la instrucción decodificada y se 
+ *guarda en el historial y se cambia el status a codificado. Si el caracter leído es una tecla backspace
+ *se limpia un caracter en el buffer y se reduce su tamaño en 1. Si se detecta una tecla KEY_UP se reduce
+ *el index para guardar en el buffer la instrucción anterior, en cambio si es un KEY_DOWN se aumenta el 
+ *index para guardar en el buffer la instrucción más nueva con respecto a la actual. En cualquier otro ca-
+ *so, mientras la longitud del buffer sea menor a 200 se guarda el caracter en el arreglo del buffer. 
+ *Finalmente se limpia la línea del prompt y se imprime el historial de las últimas 3 instrucciones. Se
+ *limpia la ventana y se vuelve a imprimir el buffer.     
  */
 enum prompt_status
 prompt_update(struct prompt *prompt)
