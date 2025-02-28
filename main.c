@@ -1,7 +1,3 @@
-/*
-
-*/
-
 #include <curses.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -16,6 +12,12 @@
 #define MAX_CMD_CHARS 50
 #define HISTORY_SIZE 3
 
+/*
+ * Estructura PCB
+ * Actualmente solo guarda los registros de la CPU, funcionando como una
+ * representación de ella.
+ * Esta estructura será manipulada principalmente por `procesar_instruccion`
+ */
 typedef struct {
     int AX;
     int BX;
@@ -25,6 +27,11 @@ typedef struct {
     char IR[100];
 } PCB;
 
+/*
+ * Imprime los valores internos de PCB.
+ * Esta es una simple función que imprime los valores de PCB, necesario cuando
+ * depuramos (impresiones de prueba).
+ */
 void mostrarPCB(PCB *pcb) {
     printf("AX: %d\n", pcb->AX);
     printf("BX: %d\n", pcb->BX);
@@ -34,6 +41,10 @@ void mostrarPCB(PCB *pcb) {
     printf("IR: %s\n", pcb->IR);
 }
 
+/*
+ * Inicializa los valores de PCB.
+ * Toma el apuntador de estructura del PCB y lo inicializa con solo ceros.
+ */
 void inicializarPCB(PCB *pcb) {
     pcb->AX = 0;
     pcb->BX = 0;
@@ -43,19 +54,22 @@ void inicializarPCB(PCB *pcb) {
     memset(pcb->IR, 0, sizeof(pcb->IR));
 }
 
-// Función para procesar una instrucción
+/*
+ * Descifra recibida en `instr` y la aplica sobre `pcb`, imprimiendo cualquier
+ * aviso en `messages` de forma manual.
+ */
 void procesar_instruccion(PCB *pcb, const char *instr, WINDOW *messages) {
     char op[4], p1[10], p2[10];
     int val1, val2;
 
     usleep(16E3);
 
-    // Actualizar el campo IR del PCB con la instrucción actual
+    /* Actualizar el campo IR del PCB con la instrucción actual */
     strncpy(pcb->IR, instr, sizeof(pcb->IR) - 1);
     pcb->IR[sizeof(pcb->IR) - 1] = '\0';
 
     sscanf(instr, "%s %s %s", op, p1, p2);
-    // Pasar a mayúsculas los strings para evitar errores
+    /* Pasar a mayúsculas las cadenas para evitar errores */
     for(size_t i = 0; op[i] != '\0'; i += 1) {
         op[i] = toupper(op[i]);
     }
@@ -66,13 +80,31 @@ void procesar_instruccion(PCB *pcb, const char *instr, WINDOW *messages) {
         p2[i] = toupper(p2[i]);
     }
 
+    /*
+     * Primer nivel: decodificación del primer argumento utilizando `strcmp`.
+     * Aquí identificamos si el primer argumento coincide con alguna de las
+     * instrucciones, si coincide, entonces procedemos a analizar los
+     * siguientes argumentos de forma específica a cada instrucción.
+     */
     if (strcmp(op, "MOV") == 0) {
+        /*
+         * Segundo nivel: identificamos argumento 2 y argumento 1.
+         * Identificamos si el segundo argumento es numérico, en caso de no
+         * serlo verificamos a que registro se refiere, si no es un registro
+         * válido el valor a manipular será cero.
+         * Después, vemos de que registro de se trata para el primer
+         * argumento, suponiendo que este nunca será un número.
+         */
         val2 = isdigit(p2[0]) ? atoi(p2) : (strcmp(p2, "AX") == 0 ? pcb->AX : strcmp(p2, "BX") == 0 ? pcb->BX : strcmp(p2, "CX") == 0 ? pcb->CX : strcmp(p2, "DX") == 0 ? pcb->DX : 0);
         if (strcmp(p1, "AX") == 0) pcb->AX = val2;
         else if (strcmp(p1, "BX") == 0) pcb->BX = val2;
         else if (strcmp(p1, "CX") == 0) pcb->CX = val2;
         else if (strcmp(p1, "DX") == 0) pcb->DX = val2;
     } else if (strcmp(op, "ADD") == 0) {
+        /*
+         * Lo mismo que fue aplicado en MOV se aplica en ADD y casi todas las
+         * demás instrucciones.
+         */
         val2 = isdigit(p2[0]) ? atoi(p2) : (strcmp(p2, "AX") == 0 ? pcb->AX : strcmp(p2, "BX") == 0 ? pcb->BX : strcmp(p2, "CX") == 0 ? pcb->CX : strcmp(p2, "DX") == 0 ? pcb->DX : 0);
         if (strcmp(p1, "AX") == 0) pcb->AX += val2;
         else if (strcmp(p1, "BX") == 0) pcb->BX += val2;
@@ -102,6 +134,10 @@ void procesar_instruccion(PCB *pcb, const char *instr, WINDOW *messages) {
             wrefresh(messages);
         }
     } else if (strcmp(op, "INC") == 0) {
+        /*
+         * Para las operaciones de incremento y decremento no nos preocupamos
+         * de un segundo argumento, en caso de existir lo ignoramos.
+         */
         if (strcmp(p1, "AX") == 0) pcb->AX++;
         else if (strcmp(p1, "BX") == 0) pcb->BX++;
         else if (strcmp(p1, "CX") == 0) pcb->CX++;
@@ -112,6 +148,9 @@ void procesar_instruccion(PCB *pcb, const char *instr, WINDOW *messages) {
         else if (strcmp(p1, "CX") == 0) pcb->CX--;
         else if (strcmp(p1, "DX") == 0) pcb->DX--;
     } else if (strcmp(op, "END") == 0) {
+        /*
+         * Cerramos stdscr, ¿por qué?
+         */
         endwin();
         //exit(0);
     } else {
@@ -122,8 +161,11 @@ void procesar_instruccion(PCB *pcb, const char *instr, WINDOW *messages) {
     pcb->PC++;
 }
 
-// Estructura en donde se almacenan los prompts ingresados
-
+/*
+ * Estructura que representa las instrucciones leídas desde la línea de
+ * comandos, no es utilizada para el procesamiento de las instrucciones que
+ * ejecutará el procesador simulado.
+ */
 struct instruction {
     char name[MAX_CMD_CHARS];
     char arg1[MAX_CMD_CHARS];
